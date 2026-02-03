@@ -1,0 +1,6 @@
+location_name,address,election_type,election_date,location_function,open_date,close_date,hours,notes
+Ann Arbor City Hall,301 E Huron St,General,2024-11-05,Polling Place,2024-11-05,2024-11-05,"7AM-8PM","Standard polling hours"
+Saline Middle School,7190 N Maple Rd,Primary,2022-08-09,Polling Place,2022-08-09,2022-08-09,"7AM-8PM","High turnout at morning"
+Cass Tech High School,2501 2nd Ave,Special,2023-05-02,Polling Place,2023-05-02,2023-05-02,"7AM-8PM","Special election vacancy"
+Dearborn Community Center,15801 Michigan Ave,Local,2019-11-05,Absentee Dropoff,2019-10-25,2019-11-05,"9AM-5PM","Absentee ballot center"
+Costick Center,28600 W Eleven Mile Rd,Primary,2020-03-10,Early Voting,2020-02-27,2020-03-09,"10AM-6PM","Early voting period"
