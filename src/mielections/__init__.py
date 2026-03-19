@@ -1,0 +1,1 @@
+"""Michigan elections data platform."""
