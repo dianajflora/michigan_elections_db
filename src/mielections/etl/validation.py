@@ -107,6 +107,32 @@ def _date_series(series: pd.Series) -> tuple[pd.Series, pd.Series]:
     return parsed, invalid_mask
 
 
+def _boolean_series(series: pd.Series) -> tuple[pd.Series, pd.Series]:
+    """Parse a boolean series and return parsed values plus an invalid mask."""
+
+    truthy_values = {"1", "true", "t", "yes", "y", "on"}
+    falsy_values = {"0", "false", "f", "no", "n", "off"}
+
+    parsed_values: list[bool | None] = []
+    invalid_mask = pd.Series(False, index=series.index)
+
+    for row_index, value in series.items():
+        if pd.isna(value) or str(value).strip() == "":
+            parsed_values.append(None)
+            continue
+
+        normalized = str(value).strip().lower()
+        if normalized in truthy_values:
+            parsed_values.append(True)
+        elif normalized in falsy_values:
+            parsed_values.append(False)
+        else:
+            parsed_values.append(None)
+            invalid_mask.loc[row_index] = True
+
+    return pd.Series(parsed_values, index=series.index, dtype="object"), invalid_mask
+
+
 def cast_columns(df: pd.DataFrame, table_definition: TableDefinition) -> tuple[pd.DataFrame, list[ValidationIssue]]:
     """Cast aligned CSV columns into their configured types."""
 
@@ -150,6 +176,20 @@ def cast_columns(df: pd.DataFrame, table_definition: TableDefinition) -> tuple[p
                         row_number=row_index + 2,
                         column_name=column_name,
                         message=f"Invalid date value in '{column_name}'. Expected YYYY-MM-DD.",
+                    )
+                )
+        elif column_definition.dtype == "boolean":
+            parsed, invalid_mask = _boolean_series(series)
+            cast_df[column_name] = parsed
+            for row_index in cast_df.index[invalid_mask]:
+                issues.append(
+                    ValidationIssue(
+                        row_number=row_index + 2,
+                        column_name=column_name,
+                        message=(
+                            f"Invalid boolean value in '{column_name}'. "
+                            "Expected true/false, yes/no, or 1/0."
+                        ),
                     )
                 )
         else:

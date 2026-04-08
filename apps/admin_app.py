@@ -15,11 +15,18 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from mielections.config.auth import login_gate
-from mielections.config.settings import get_settings, mask_database_url
+from mielections.config.settings import get_settings
 from mielections.config.table_metadata import TABLE_DEFINITIONS, ordered_table_definitions
+from mielections.db.session import ensure_database_schema
 from mielections.etl.exceptions import EtlValidationError
 from mielections.etl.service import execute_upload, preview_upload
 from mielections.etl.validation import ValidationIssue
+
+ADMIN_UPLOAD_TABLES = {
+    definition.table_name: definition
+    for definition in ordered_table_definitions()
+    if definition.table_name != "counties"
+}
 
 
 def issues_to_frame(issues: list[ValidationIssue]) -> pd.DataFrame:
@@ -57,13 +64,10 @@ def render_table_expectations(table_name: str) -> None:
 def render_sidebar() -> None:
     """Render shared sidebar content."""
 
-    settings = get_settings()
-    st.sidebar.header("Connection")
-    st.sidebar.code(mask_database_url(settings.database_url))
-    st.sidebar.caption("Authentication and database credentials are loaded from environment variables or Streamlit secrets.")
+    get_settings()
 
     st.sidebar.header("Load Order")
-    for table_definition in ordered_table_definitions():
+    for table_definition in ADMIN_UPLOAD_TABLES.values():
         st.sidebar.write(f"{table_definition.load_order}. `{table_definition.table_name}`")
 
 
@@ -71,6 +75,7 @@ def main() -> None:
     """Render the admin uploader UI."""
 
     st.set_page_config(page_title="Michigan Elections Admin Upload", layout="wide")
+    ensure_database_schema()
     st.title("Michigan Elections Admin Uploader")
     st.caption("Validated CSV uploads into the shared PostgreSQL database.")
 
@@ -79,7 +84,7 @@ def main() -> None:
 
     render_sidebar()
 
-    table_names = [definition.table_name for definition in ordered_table_definitions()]
+    table_names = list(ADMIN_UPLOAD_TABLES)
     selected_table = st.selectbox("Target table", options=table_names)
 
     st.subheader("Expected CSV columns")
@@ -114,7 +119,7 @@ def main() -> None:
 
     st.success(f"Validation passed for {len(preview.normalized_frame)} row(s).")
 
-    if st.button("Upload to PostgreSQL", type="primary"):
+    if st.button("Upload To Database", type="primary"):
         try:
             result = execute_upload(selected_table, file_bytes)
         except EtlValidationError as exc:

@@ -7,11 +7,10 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from mielections.config.table_metadata import TABLE_DEFINITIONS
-from mielections.db.models import County, Election, ElectionUsage, Jurisdiction, Location
+from mielections.db.models import County, Election, ElectionUsage, Location
 
 MODEL_REGISTRY = {
     "counties": County,
-    "jurisdictions": Jurisdiction,
     "locations": Location,
     "elections": Election,
     "election_usage": ElectionUsage,

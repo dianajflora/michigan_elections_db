@@ -8,7 +8,7 @@ import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from mielections.db.models import County, Election, Jurisdiction, Location
+from mielections.db.models import County, Election, Location
 from mielections.etl.validation import ValidationIssue
 
 
@@ -29,14 +29,17 @@ def prepare_counties(df: pd.DataFrame, session: Session) -> tuple[pd.DataFrame, 
     return df[["county_name", "fips_code"]].copy(), []
 
 
-def prepare_jurisdictions(
+def prepare_locations(
     df: pd.DataFrame,
     session: Session,
 ) -> tuple[pd.DataFrame, list[ValidationIssue]]:
-    """Resolve county IDs for jurisdiction rows."""
+    """Resolve county IDs for location rows."""
 
     counties = session.execute(select(County.county_id, County.county_name)).all()
-    county_lookup = {county_name: county_id for county_id, county_name in counties}
+    county_lookup = {
+        _normalize_string(county_name): county_id
+        for county_id, county_name in counties
+    }
 
     issues: list[ValidationIssue] = []
     county_ids: list[int | None] = []
@@ -57,59 +60,20 @@ def prepare_jurisdictions(
     prepared = df.copy()
     prepared["county_id"] = county_ids
 
-    return prepared[["county_id", "jurisdiction_name", "clerk_name", "clerk_email", "jurisdiction_type"]], issues
-
-
-def prepare_locations(
-    df: pd.DataFrame,
-    session: Session,
-) -> tuple[pd.DataFrame, list[ValidationIssue]]:
-    """Resolve jurisdiction IDs for location rows."""
-
-    lookup_rows = session.execute(
-        select(
-            Jurisdiction.jurisdiction_id,
-            Jurisdiction.jurisdiction_name,
-            County.county_name,
-        ).join(County, County.county_id == Jurisdiction.county_id)
-    ).all()
-    jurisdiction_lookup = {
-        (_normalize_string(county_name), _normalize_string(jurisdiction_name)): jurisdiction_id
-        for jurisdiction_id, jurisdiction_name, county_name in lookup_rows
-    }
-
-    issues: list[ValidationIssue] = []
-    jurisdiction_ids: list[int | None] = []
-
-    for index, row in df.iterrows():
-        county_name = _normalize_string(row["county_name"])
-        jurisdiction_name = _normalize_string(row["jurisdiction_name"])
-        jurisdiction_id = jurisdiction_lookup.get((county_name, jurisdiction_name))
-        if jurisdiction_id is None:
-            issues.append(
-                ValidationIssue(
-                    row_number=index + 2,
-                    column_name="jurisdiction_name",
-                    message=(
-                        f"Jurisdiction '{jurisdiction_name}' in county '{county_name}' "
-                        "does not exist in PostgreSQL."
-                    ),
-                )
-            )
-        jurisdiction_ids.append(jurisdiction_id)
-
-    prepared = df.copy()
-    prepared["jurisdiction_id"] = jurisdiction_ids
-
     return prepared[
         [
-            "jurisdiction_id",
+            "county_id",
             "location_name",
             "address",
             "city",
             "zip_code",
+            "jurisdiction_name",
+            "precinct",
             "latitude",
             "longitude",
+            "handicap_accessible",
+            "access_notes",
+            "location_description",
         ]
     ], issues
 
@@ -149,10 +113,19 @@ def prepare_election_usage(
         for election_id, election_date, election_type in election_rows
     }
 
-    location_rows = session.execute(select(Location.location_id, Location.location_name, Location.address)).all()
-    location_lookup: dict[tuple[str | None, str | None], list[int]] = {}
-    for location_id, location_name, address in location_rows:
-        key = (_normalize_string(location_name), _normalize_string(address))
+    location_rows = session.execute(
+        select(Location.location_id, Location.location_name, Location.address, County.county_name).join(
+            County,
+            County.county_id == Location.county_id,
+        )
+    ).all()
+    location_lookup: dict[tuple[str | None, str | None, str | None], list[int]] = {}
+    for location_id, location_name, address, county_name in location_rows:
+        key = (
+            _normalize_string(county_name),
+            _normalize_string(location_name),
+            _normalize_string(address),
+        )
         location_lookup.setdefault(key, []).append(location_id)
 
     issues: list[ValidationIssue] = []
@@ -174,7 +147,12 @@ def prepare_election_usage(
                 )
             )
 
-        location_key = (_normalize_string(row["location_name"]), _normalize_string(row["address"]))
+        county_name = _normalize_string(row["county_name"])
+        location_key = (
+            county_name,
+            _normalize_string(row["location_name"]),
+            _normalize_string(row["address"]),
+        )
         matching_location_ids = location_lookup.get(location_key, [])
         if not matching_location_ids:
             issues.append(
@@ -182,8 +160,8 @@ def prepare_election_usage(
                     row_number=index + 2,
                     column_name="location_name",
                     message=(
-                        f"Location '{row['location_name']}' at '{row['address']}' "
-                        "does not exist in PostgreSQL."
+                        f"Location '{row['location_name']}' at '{row['address']}' in county "
+                        f"'{row['county_name']}' does not exist in PostgreSQL."
                     ),
                 )
             )
@@ -194,23 +172,14 @@ def prepare_election_usage(
                     row_number=index + 2,
                     column_name="location_name",
                     message=(
-                        f"Location '{row['location_name']}' at '{row['address']}' is ambiguous. "
-                        "Add more identifying columns to the source file."
+                        f"Location '{row['location_name']}' at '{row['address']}' in county "
+                        f"'{row['county_name']}' is ambiguous."
                     ),
                 )
             )
             location_id = None
         else:
             location_id = matching_location_ids[0]
-
-        if pd.notna(row["open_date"]) and pd.notna(row["close_date"]) and row["open_date"] > row["close_date"]:
-            issues.append(
-                ValidationIssue(
-                    row_number=index + 2,
-                    column_name="close_date",
-                    message="close_date must be on or after open_date.",
-                )
-            )
 
         election_ids.append(election_id)
         location_ids.append(location_id)
@@ -224,17 +193,14 @@ def prepare_election_usage(
             "election_id",
             "location_id",
             "location_function",
-            "open_date",
-            "close_date",
-            "hours",
-            "notes",
+            "day",
+            "hour",
         ]
     ], issues
 
 
 PREPARERS = {
     "counties": prepare_counties,
-    "jurisdictions": prepare_jurisdictions,
     "locations": prepare_locations,
     "elections": prepare_elections,
     "election_usage": prepare_election_usage,

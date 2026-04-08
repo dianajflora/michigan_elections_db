@@ -1,6 +1,6 @@
-county_name,jurisdiction_name,location_name,address,city,zip_code,latitude,longitude
-Alcona County,Ann Arbor,Ann Arbor City Hall,301 E Huron St,Ann Arbor,48104,42.2819,-83.7480
-Alcona County,Saline,Saline Middle School,7190 N Maple Rd,Saline,48176,42.1667,-83.7819
-Alcona County,Detroit,Cass Tech High School,2501 2nd Ave,Detroit,48201,42.3341,-83.0507
-Wayne County,Dearborn,Dearborn Community Center,15801 Michigan Ave,Dearborn,48126,42.3223,-83.1763
-Wayne County,Farmington Hills,Costick Center,28600 W Eleven Mile Rd,Farmington Hills,48336,42.4974,-83.3430
+county_name,location_name,address,city,zip_code,jurisdiction_name,Precinct,latitude,longitude,handicap_accessible,access_notes,location_description
+Washtenaw County,Ann Arbor City Hall,301 E Huron St,Ann Arbor,48104,Ann Arbor,1,42.2819,-83.7480,yes,Ramp entrance on east side,City hall polling location
+Washtenaw County,Saline Middle School,7190 N Maple Rd,Saline,48176,Saline,3,42.1667,-83.7819,yes,Main entrance is accessible,School gym entrance
+Wayne County,Cass Tech High School,2501 2nd Ave,Detroit,48201,Detroit,12,42.3341,-83.0507,no,Temporary curbside assistance only,High school voting site
+Wayne County,Dearborn Community Center,15801 Michigan Ave,Dearborn,48126,Dearborn,7,42.3223,-83.1763,yes,Automatic doors at west entrance,Community center absentee dropoff
+Oakland County,Costick Center,28600 W Eleven Mile Rd,Farmington Hills,48336,Farmington Hills,5,42.4974,-83.3430,yes,Accessible parking in front lot,Senior center early voting hub

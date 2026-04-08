@@ -12,11 +12,10 @@ from sqlalchemy import Select, func, inspect, select
 from sqlalchemy.orm import DeclarativeBase, Session
 
 from mielections.config.joins import ALLOWED_JOINS, AllowedJoin
-from mielections.db.models import County, Election, ElectionUsage, Jurisdiction, Location
+from mielections.db.models import County, Election, ElectionUsage, Location
 
 MODEL_REGISTRY: dict[str, type[DeclarativeBase]] = {
     "counties": County,
-    "jurisdictions": Jurisdiction,
     "locations": Location,
     "elections": Election,
     "election_usage": ElectionUsage,
@@ -26,20 +25,19 @@ DISPLAY_NAME_OVERRIDES: dict[str, str] = {
     "counties.county_id": "County ID",
     "counties.county_name": "County Name",
     "counties.fips_code": "FIPS Code",
-    "jurisdictions.jurisdiction_id": "Jurisdiction ID",
-    "jurisdictions.county_id": "County ID",
-    "jurisdictions.jurisdiction_name": "Jurisdiction Name",
-    "jurisdictions.clerk_name": "Clerk Name",
-    "jurisdictions.clerk_email": "Clerk Email",
-    "jurisdictions.jurisdiction_type": "Jurisdiction Type",
     "locations.location_id": "Location ID",
-    "locations.jurisdiction_id": "Jurisdiction ID",
+    "locations.county_id": "County ID",
     "locations.location_name": "Location Name",
     "locations.address": "Address",
     "locations.city": "City",
     "locations.zip_code": "ZIP Code",
+    "locations.jurisdiction_name": "Jurisdiction Name",
+    "locations.precinct": "Precinct",
     "locations.latitude": "Latitude",
     "locations.longitude": "Longitude",
+    "locations.handicap_accessible": "Handicap Accessible",
+    "locations.access_notes": "Access Notes",
+    "locations.location_description": "Location Description",
     "elections.election_id": "Election ID",
     "elections.election_year": "Election Year",
     "elections.election_date": "Election Date",
@@ -49,10 +47,8 @@ DISPLAY_NAME_OVERRIDES: dict[str, str] = {
     "election_usage.election_id": "Election ID",
     "election_usage.location_id": "Location ID",
     "election_usage.location_function": "Location Function",
-    "election_usage.open_date": "Open Date",
-    "election_usage.close_date": "Close Date",
-    "election_usage.hours": "Hours",
-    "election_usage.notes": "Usage Notes",
+    "election_usage.day": "Day",
+    "election_usage.hour": "Hour",
 }
 
 
@@ -141,6 +137,8 @@ def get_column_options(table_names: list[str]) -> list[ColumnOption]:
         model = MODEL_REGISTRY[table_name]
         mapper = inspect(model)
         for column in mapper.columns:
+            if column.key.endswith("_id"):
+                continue
             key = f"{table_name}.{column.key}"
             try:
                 python_type = column.type.python_type.__name__
@@ -231,7 +229,7 @@ def execute_safe_query(
     base_table: str,
     selected_column_keys: list[str],
     filters: dict[str, list[object]],
-    row_limit: int,
+    row_limit: int | None = None,
 ) -> pd.DataFrame:
     """Build and execute a safe query constrained by allowed joins."""
 
@@ -259,7 +257,8 @@ def execute_safe_query(
         model = MODEL_REGISTRY[table_name]
         statement = statement.where(getattr(model, column_name).in_(_coerce_filter_values(values)))
 
-    statement = statement.limit(row_limit)
+    if row_limit is not None:
+        statement = statement.limit(row_limit)
     result = session.execute(statement)
     frame = pd.DataFrame(result.fetchall(), columns=result.keys())
     return frame.applymap(_serialize_value) if not frame.empty else frame

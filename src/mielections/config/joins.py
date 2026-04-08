@@ -17,8 +17,7 @@ class AllowedJoin:
 
 
 ALLOWED_JOINS: tuple[AllowedJoin, ...] = (
-    AllowedJoin("counties", "jurisdictions", "county_id", "county_id", "county_to_jurisdictions"),
-    AllowedJoin("jurisdictions", "locations", "jurisdiction_id", "jurisdiction_id", "jurisdiction_to_locations"),
+    AllowedJoin("counties", "locations", "county_id", "county_id", "county_to_locations"),
     AllowedJoin("elections", "election_usage", "election_id", "election_id", "election_to_usage"),
     AllowedJoin("locations", "election_usage", "location_id", "location_id", "location_to_usage"),
 )

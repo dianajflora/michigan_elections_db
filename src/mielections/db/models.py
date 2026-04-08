@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Optional
 
-from sqlalchemy import Date, Float, ForeignKey, Identity, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, Date, Float, ForeignKey, Identity, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mielections.db.base import Base
@@ -21,30 +21,7 @@ class County(Base):
     county_name: Mapped[str] = mapped_column(String(255), nullable=False)
     fips_code: Mapped[str] = mapped_column(String(16), nullable=False)
 
-    jurisdictions: Mapped[list["Jurisdiction"]] = relationship(back_populates="county")
-
-
-class Jurisdiction(Base):
-    """Election jurisdiction within a county."""
-
-    __tablename__ = "jurisdictions"
-    __table_args__ = (
-        UniqueConstraint("county_id", "jurisdiction_name", name="uq_jurisdictions_county_name"),
-    )
-
-    jurisdiction_id: Mapped[int] = mapped_column(Integer, Identity(), primary_key=True)
-    county_id: Mapped[int] = mapped_column(
-        ForeignKey("counties.county_id", ondelete="RESTRICT"),
-        nullable=False,
-        index=True,
-    )
-    jurisdiction_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    clerk_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    clerk_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    jurisdiction_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-
-    county: Mapped[County] = relationship(back_populates="jurisdictions")
-    locations: Mapped[list["Location"]] = relationship(back_populates="jurisdiction")
+    locations: Mapped[list["Location"]] = relationship(back_populates="county")
 
 
 class Location(Base):
@@ -53,16 +30,16 @@ class Location(Base):
     __tablename__ = "locations"
     __table_args__ = (
         UniqueConstraint(
-            "jurisdiction_id",
+            "county_id",
             "location_name",
             "address",
-            name="uq_locations_jurisdiction_name_address",
+            name="uq_locations_county_name_address",
         ),
     )
 
     location_id: Mapped[int] = mapped_column(Integer, Identity(), primary_key=True)
-    jurisdiction_id: Mapped[int] = mapped_column(
-        ForeignKey("jurisdictions.jurisdiction_id", ondelete="RESTRICT"),
+    county_id: Mapped[int] = mapped_column(
+        ForeignKey("counties.county_id", ondelete="RESTRICT"),
         nullable=False,
         index=True,
     )
@@ -70,10 +47,15 @@ class Location(Base):
     address: Mapped[str] = mapped_column(String(255), nullable=False)
     city: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     zip_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    jurisdiction_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    precinct: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     latitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     longitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    handicap_accessible: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    access_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    location_description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    jurisdiction: Mapped[Jurisdiction] = relationship(back_populates="locations")
+    county: Mapped[County] = relationship(back_populates="locations")
     election_usage: Mapped[list["ElectionUsage"]] = relationship(back_populates="location")
 
 
@@ -108,7 +90,9 @@ class ElectionUsage(Base):
             "election_id",
             "location_id",
             "location_function",
-            name="uq_election_usage_election_location_function",
+            "day",
+            "hour",
+            name="uq_election_usage_election_location_schedule",
         ),
     )
 
@@ -124,10 +108,8 @@ class ElectionUsage(Base):
         index=True,
     )
     location_function: Mapped[str] = mapped_column(String(100), nullable=False)
-    open_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
-    close_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
-    hours: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    day: Mapped[date] = mapped_column(Date, nullable=False)
+    hour: Mapped[str] = mapped_column(String(100), nullable=False)
 
     election: Mapped[Election] = relationship(back_populates="election_usage")
     location: Mapped[Location] = relationship(back_populates="election_usage")
