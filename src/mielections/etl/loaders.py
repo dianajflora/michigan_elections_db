@@ -20,7 +20,7 @@ MODEL_REGISTRY = {
 def dataframe_to_records(df: pd.DataFrame) -> list[dict]:
     """Convert a DataFrame into SQL-friendly record dictionaries."""
 
-    cleaned = df.where(pd.notna(df), None)
+    cleaned = df.astype(object).where(pd.notna(df), None)
     return cleaned.to_dict(orient="records")
 
 

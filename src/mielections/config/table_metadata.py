@@ -93,8 +93,8 @@ TABLE_DEFINITIONS: dict[str, TableDefinition] = {
             CsvColumnDefinition("election_type", "election_type", "string", True, "Existing election type."),
             CsvColumnDefinition("election_date", "election_date", "date", True, "Existing election date."),
             CsvColumnDefinition("location_function", "location_function", "string", True, "How the location is used."),
-            CsvColumnDefinition("day", "day", "date", True, "Day or date label for the usage window."),
-            CsvColumnDefinition("hour", "hour", "string", True, "Hour or hour range."),
+            CsvColumnDefinition("day", "day", "date", False, "Day or date label for the usage window."),
+            CsvColumnDefinition("hour", "hour", "string", False, "Hour or hour range."),
         ),
         upsert_columns=("election_id", "location_id", "location_function", "day", "hour"),
         preview_columns=(

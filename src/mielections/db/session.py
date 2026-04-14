@@ -9,18 +9,32 @@ from functools import lru_cache
 from sqlalchemy import Engine, create_engine, inspect
 from sqlalchemy.orm import Session, sessionmaker
 
-from mielections.config.settings import get_settings
+from mielections.config.settings import get_settings, set_default_database_url_key
 from mielections.db.base import Base
 
 LEGACY_TABLE_DROP_ORDER = ("election_usage", "locations", "jurisdictions", "alembic_version")
 FULL_TABLE_DROP_ORDER = (*LEGACY_TABLE_DROP_ORDER, "elections", "counties")
+_database_url_key = "DATABASE_URL"
+
+
+def set_database_url_key(database_url_key: str) -> None:
+    """Select which configured database URL future sessions should use."""
+
+    global _database_url_key
+    if _database_url_key == database_url_key:
+        return
+
+    _database_url_key = database_url_key
+    set_default_database_url_key(database_url_key)
+    get_engine.cache_clear()
+    get_session_factory.cache_clear()
 
 
 @lru_cache(maxsize=1)
 def get_engine() -> Engine:
     """Create and cache the SQLAlchemy engine."""
 
-    settings = get_settings()
+    settings = get_settings(_database_url_key)
     return create_engine(
         settings.database_url,
         echo=settings.sql_echo,

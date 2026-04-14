@@ -13,9 +13,8 @@ SRC_DIR = ROOT_DIR / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from mielections.config.auth import login_gate
 from mielections.config.settings import get_settings
-from mielections.db.session import ensure_database_schema, session_scope
+from mielections.db.session import ensure_database_schema, session_scope, set_database_url_key
 from mielections.query.service import (
     default_column_keys,
     execute_safe_query,
@@ -128,13 +127,11 @@ def _render_results(base_table: str, selected_column_keys: list[str], filters: d
 def main() -> None:
     """Render the client-facing safe query app."""
 
+    set_database_url_key("QUERY_DATABASE_URL")
     st.set_page_config(page_title="Michigan Elections Query App", layout="wide")
     ensure_database_schema()
     st.title("Michigan Elections Query App")
     st.caption("Browse, filter, safely join related tables, and export CSV results.")
-
-    if not login_gate(scope="query"):
-        st.stop()
 
     _render_sidebar()
 

@@ -43,11 +43,11 @@ class Location(Base):
         nullable=False,
         index=True,
     )
-    location_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    address: Mapped[str] = mapped_column(String(255), nullable=False)
+    location_name: Mapped[str] = mapped_column(String(500), nullable=False)
+    address: Mapped[str] = mapped_column(String(500), nullable=False)
     city: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     zip_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-    jurisdiction_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    jurisdiction_name: Mapped[Optional[str]] = mapped_column(String(700), nullable=True)
     precinct: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     latitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     longitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
@@ -108,8 +108,8 @@ class ElectionUsage(Base):
         index=True,
     )
     location_function: Mapped[str] = mapped_column(String(100), nullable=False)
-    day: Mapped[date] = mapped_column(Date, nullable=False)
-    hour: Mapped[str] = mapped_column(String(100), nullable=False)
+    day: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    hour: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     election: Mapped[Election] = relationship(back_populates="election_usage")
     location: Mapped[Location] = relationship(back_populates="election_usage")

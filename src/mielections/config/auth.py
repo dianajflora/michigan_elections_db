@@ -44,7 +44,7 @@ def login_gate(scope: str) -> bool:
         return True
 
     st.subheader("Login")
-    username = st.text_input("Username")
+    username = None if scope == "query" else st.text_input("Username")
     password = st.text_input("Password", type="password")
 
     if st.button("Sign in", type="primary"):

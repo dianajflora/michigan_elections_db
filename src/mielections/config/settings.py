@@ -11,11 +11,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+_default_database_url_key = "DATABASE_URL"
+
 STREAMLIT_SECRET_LOOKUPS: dict[str, list[tuple[str, str]]] = {
     "DATABASE_URL": [("database", "url")],
+    "ADMIN_DATABASE_URL": [("database", "admin_url")],
+    "QUERY_DATABASE_URL": [("database", "query_url")],
     "AUTH_ENABLED": [("auth", "enabled")],
     "ADMIN_APP_USERNAME": [("auth", "admin_username")],
     "ADMIN_APP_PASSWORD": [("auth", "admin_password")],
+    "QUERY_APP_PASSWORD": [("auth", "query_password")],
 }
 
 
@@ -44,13 +49,13 @@ def _read_streamlit_secret(key: str) -> str | None:
 def get_secret(key: str, default: str | None = None) -> str | None:
     """Read a setting from environment variables or Streamlit secrets."""
 
-    value = os.getenv(key)
-    if value not in (None, ""):
-        return value
-
     secret_value = _read_streamlit_secret(key)
     if secret_value not in (None, ""):
         return secret_value
+
+    value = os.getenv(key)
+    if value not in (None, ""):
+        return value
 
     return default
 
@@ -64,6 +69,17 @@ def get_bool(key: str, default: bool) -> bool:
     return raw_value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def set_default_database_url_key(database_url_key: str) -> None:
+    """Select the database URL key used by default settings calls."""
+
+    global _default_database_url_key
+    if _default_database_url_key == database_url_key:
+        return
+
+    _default_database_url_key = database_url_key
+    get_settings.cache_clear()
+
+
 @dataclass(frozen=True)
 class AppSettings:
     """Top-level application settings."""
@@ -74,13 +90,14 @@ class AppSettings:
     auth_enabled: bool = True
 
 
-@lru_cache(maxsize=1)
-def get_settings() -> AppSettings:
+@lru_cache(maxsize=None)
+def get_settings(database_url_key: str | None = None) -> AppSettings:
     """Load and cache settings from the current environment."""
 
-    database_url = get_secret("DATABASE_URL")
+    database_url_key = database_url_key or _default_database_url_key
+    database_url = get_secret(database_url_key)
     if not database_url:
-        raise ValueError("DATABASE_URL is not configured.")
+        raise ValueError(f"{database_url_key} is not configured.")
 
     return AppSettings(
         database_url=database_url,

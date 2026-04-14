@@ -102,8 +102,11 @@ def _date_series(series: pd.Series) -> tuple[pd.Series, pd.Series]:
     """Parse a date series and return parsed values plus an invalid mask."""
 
     raw = series.copy()
-    parsed = pd.to_datetime(raw, errors="coerce").dt.date
-    invalid_mask = raw.notna() & raw.astype(str).str.strip().ne("") & parsed.isna()
+    raw_text = raw.astype(str).str.strip()
+    missing_mask = raw.isna() | raw_text.str.lower().isin({"", "na", "n/a", "none", "null", "nan", "nat", "-"})
+    normalized = raw.mask(missing_mask, None)
+    parsed = pd.to_datetime(normalized, errors="coerce").dt.date
+    invalid_mask = ~missing_mask & parsed.isna()
     return parsed, invalid_mask
 
 

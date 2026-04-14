@@ -17,7 +17,7 @@ if str(SRC_DIR) not in sys.path:
 from mielections.config.auth import login_gate
 from mielections.config.settings import get_settings
 from mielections.config.table_metadata import TABLE_DEFINITIONS, ordered_table_definitions
-from mielections.db.session import ensure_database_schema
+from mielections.db.session import ensure_database_schema, set_database_url_key
 from mielections.etl.exceptions import EtlValidationError
 from mielections.etl.service import execute_upload, preview_upload
 from mielections.etl.validation import ValidationIssue
@@ -74,6 +74,7 @@ def render_sidebar() -> None:
 def main() -> None:
     """Render the admin uploader UI."""
 
+    set_database_url_key("ADMIN_DATABASE_URL")
     st.set_page_config(page_title="Michigan Elections Admin Upload", layout="wide")
     ensure_database_schema()
     st.title("Michigan Elections Admin Uploader")
