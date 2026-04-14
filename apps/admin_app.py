@@ -14,7 +14,6 @@ SRC_DIR = ROOT_DIR / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from mielections.config.auth import login_gate
 from mielections.config.settings import get_settings
 from mielections.config.table_metadata import TABLE_DEFINITIONS, ordered_table_definitions
 from mielections.db.session import ensure_database_schema, set_database_url_key
@@ -79,9 +78,6 @@ def main() -> None:
     ensure_database_schema()
     st.title("Michigan Elections Admin Uploader")
     st.caption("Validated CSV uploads into the shared PostgreSQL database.")
-
-    if not login_gate(scope="admin"):
-        st.stop()
 
     render_sidebar()
 
