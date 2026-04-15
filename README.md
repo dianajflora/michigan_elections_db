@@ -82,7 +82,43 @@ This will open the app in your web browser automatically and you will be able to
 
 ---
 
-## Notes
+# Understanding The Upload Workflow 
+
+## Database Schema For Reference
+![Database Schema](DB_schema.png)
+
+## 1. Download All Cleaned and Properly Formatted Files From the Jupyter Notebook Cleaning Tool
+
+You should have a file for locations and election usage after the cleaning steps are complete.
+
+## 2. Updating The Elections Table 
+This table contains key information to identify each unique election that is present in the database. 
+
+If these files contain information for an election that is already entered, omit this step; if not, continue reading. 
+
+Follow these steps to add an election to the database:
+- Login to NEON where the database is hosted 
+- On the left hand side of the screen, click `Tables`
+- Select the `elections` table
+- Click the `Add record` button 
+- Enter information for the year, date, and election_type, as these are the minimum requirements for a new record to be inputted into the `elections` table; the rest of the columns are optional
+- Once you are done entering the data, click `Save Changes`
+
+## 3. Upload The `Locations` CSV
+- Return to the query app that is running locally on your computer and select `locations` as your target table 
+- Upload the locations CSV you downloaded earlier from the Jupyter notebook into the uploader at the bottom of the screen
+- If there is a validation error, review the bottom of the `README` file for more information
+- Click `Upload To Database` and wait for confirmation that the data was successfully uploaded 
+- Click the `X` button just below where it says `Browse Files` to reset the page
+
+## 4. Upload the `Election Usage` CSV
+- Select `election_usage` as your target table 
+- Upload the election usage CSV you downloaded earlier from the Jupyter notebook into the uploader at the bottom of the screen
+- If there is a validation error, review the bottom of the `README` file for more information
+- Click `Upload To Database` and wait for confirmation that the data was successfully uploaded 
+- Click the `X` button just below where it says `Browse Files` to reset the page
+
+## Common Validation Errors
 
 The uploader validates files before inserting them into the database. If an upload is not allowed, the app will show one or more validation errors and will not commit that file.
 
